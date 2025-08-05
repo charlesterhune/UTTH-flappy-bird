@@ -1,5 +1,5 @@
 // ─── CONFIG ───  
-const winScore    = 2;        // how many pipe-pairs to pass before “win”  
+const winScore    = 1;        // how many pipe-pairs to pass before “win”  
 const internalW   = 320, internalH = 480;  
 // ───────────────
 
