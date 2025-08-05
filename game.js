@@ -1,18 +1,18 @@
 // ─── CONFIG ───  
-const winScore = 2 ;      // how many pipe-pairs to pass before “win” (set 30–50)  
-const internalW = 320, internalH = 480;  
-// ─────────────
+const winScore    = 2;        // how many pipe-pairs to pass before “win”  
+const internalW   = 320, internalH = 480;  
+// ───────────────
 
-const RAD = Math.PI / 180;
+const RAD  = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
 // ── FORCE FULL-SIZE CANVAS ──
-scrn.width  = internalW;
-scrn.height = internalH;
-scrn.style.width  = "100%";
-scrn.style.height = "100%";
-// ─────────────────────────────
+scrn.width       = internalW;
+scrn.height      = internalH;
+scrn.style.width = "100%";
+scrn.style.height= "100%";
+// ────────────────────────────
 
 scrn.tabIndex = 1;
 scrn.addEventListener("click", () => {
@@ -31,7 +31,7 @@ scrn.addEventListener("click", () => {
 });
 
 scrn.onkeydown = e => {
-  if ([32,87,38].includes(e.keyCode)) {
+  if ([32, 87, 38].includes(e.keyCode)) {
     switch (state.curr) {
       case state.getReady:
         state.curr = state.Play;
@@ -48,12 +48,12 @@ scrn.onkeydown = e => {
 };
 
 function resetToReady() {
-  state.curr   = state.getReady;
-  bird.speed   = 0;
-  bird.y       = 100;
-  pipe.pipes   = [];
-  UI.score.curr = 0;
-  SFX.played   = false;
+  state.curr     = state.getReady;
+  bird.speed     = 0;
+  bird.y         = 100;
+  pipe.pipes     = [];
+  UI.score.curr  = 0;
+  SFX.played     = false;
 }
 
 let frames = 0;
@@ -115,8 +115,6 @@ const pipe = {
       this.moved = true;
     }
     this.pipes.forEach(p => { p.x -= dx; });
-
-    // remove & allow score again
     if (this.pipes.length && this.pipes[0].x < -this.top.sprite.width) {
       this.pipes.shift();
       this.moved = true;
@@ -159,7 +157,7 @@ const bird = {
         break;
 
       case state.Play:
-        this.frame = (this.frame + 1) % this.animations.length;
+        this.frame += frames % 5 === 0 ? 1 : 0;
         this.y    += this.speed;
         this.setRotation();
         this.speed += this.gravity;
@@ -172,15 +170,16 @@ const bird = {
       case state.gameOver:
         this.frame = 1;
         if (this.y + r < gnd.y) {
-          this.y    += this.speed;
+          this.y     += this.speed;
           this.setRotation();
-          this.speed += this.gravity*2;
+          this.speed += this.gravity * 2;
         } else if (!SFX.played) {
           SFX.die.play();
           SFX.played = true;
         }
         break;
     }
+    this.frame = this.frame % this.animations.length;
   },
 
   flap() {
@@ -192,32 +191,28 @@ const bird = {
 
   setRotation() {
     if (this.speed <= 0) {
-      this.rotatation = Math.max(-25, -25 * this.speed/(-this.thrust));
+      this.rotatation = Math.max(-25, (-25 * this.speed) / (-1 * this.thrust));
     } else {
-      this.rotatation = Math.min(90,  90 * this.speed/(this.thrust*2));
+      this.rotatation = Math.min(90, (90 * this.speed) / (this.thrust * 2));
     }
   },
 
   checkCollision() {
-    if (!pipe.pipes.length) return false;
+    if (!pipe.pipes.length) return;
     const spr = this.animations[0].sprite;
-    const r   = (spr.width + spr.height)/4;
-    const p   = pipe.pipes[0];
-    const roof  = p.y + pipe.top.sprite.height;
+    const x   = pipe.pipes[0].x;
+    const y   = pipe.pipes[0].y;
+    const r   = spr.height / 4 + spr.width / 4;
+    const roof  = y + pipe.top.sprite.height;
     const floor = roof + pipe.gap;
     const w     = pipe.top.sprite.width;
 
-    // horizontally overlapping?
-    if (this.x + r > p.x && this.x - r < p.x + w) {
-      // hits roof or floor
+    if (this.x + r >= x && this.x - r < x + w) {
       if (this.y - r <= roof || this.y + r >= floor) {
         SFX.hit.play();
         return true;
       }
-    }
-
-    // scored this pair?
-    if (pipe.moved && p.x + w < this.x) {
+    } else if (pipe.moved && x + w < this.x) {
       UI.score.curr++;
       SFX.score.play();
       pipe.moved = false;
@@ -228,7 +223,6 @@ const bird = {
         resetToReady();
       }
     }
-    return false;
   }
 };
 
@@ -242,25 +236,25 @@ const UI = {
   draw() {
     switch (state.curr) {
       case state.getReady:
-        drawSpriteCentered(this.getReady.sprite);
-        drawSpriteAt(this.tap[this.frame].sprite,
-                     scrn.width/2 - this.tap[0].sprite.width/2,
-                     scrn.height/2 + this.getReady.sprite.height/2);
+        this.drawCentered(this.getReady.sprite);
+        this.drawAt(this.tap[this.frame].sprite,
+          scrn.width/2 - this.tap[0].sprite.width/2,
+          scrn.height/2 + this.getReady.sprite.height/2);
         break;
 
       case state.gameOver:
-        drawSpriteCentered(this.gameOver.sprite);
-        drawSpriteAt(this.tap[this.frame].sprite,
-                     scrn.width/2 - this.tap[0].sprite.width/2,
-                     scrn.height/2 + this.gameOver.sprite.height/2);
+        this.drawCentered(this.gameOver.sprite);
+        this.drawAt(this.tap[this.frame].sprite,
+          scrn.width/2 - this.tap[0].sprite.width/2,
+          scrn.height/2 + this.gameOver.sprite.height/2);
         break;
     }
     this.drawScore();
   },
 
   drawScore() {
-    sctx.fillStyle   = "#FFF";
-    sctx.strokeStyle = "#000";
+    sctx.fillStyle   = "#FFFFFF";
+    sctx.strokeStyle = "#000000";
     sctx.lineWidth   = 2;
 
     if (state.curr === state.Play) {
@@ -273,38 +267,42 @@ const UI = {
       this.score.best = Math.max(this.score.curr, localStorage.getItem("best")||0);
       localStorage.setItem("best", this.score.best);
       sctx.font = "40px Squada One";
-      sctx.fillText(`SCORE: ${this.score.curr}`, scrn.width/2 - 80, scrn.height/2);
-      sctx.strokeText(`SCORE: ${this.score.curr}`, scrn.width/2 - 80, scrn.height/2);
-      sctx.fillText(`BEST:  ${this.score.best}`, scrn.width/2 - 80, scrn.height/2 + 40);
-      sctx.strokeText(`BEST:  ${this.score.best}`, scrn.width/2 - 80, scrn.height/2 + 40);
+      let sc = `SCORE :     ${this.score.curr}`;
+      let bs = `BEST  :     ${this.score.best}`;
+      sctx.fillText(sc, scrn.width/2 - 80, scrn.height/2 + 0);
+      sctx.strokeText(sc, scrn.width/2 - 80, scrn.height/2 + 0);
+      sctx.fillText(bs, scrn.width/2 - 80, scrn.height/2 + 30);
+      sctx.strokeText(bs, scrn.width/2 - 80, scrn.height/2 + 30);
     }
   },
 
   update() {
-    if (state.curr !== state.getReady && state.curr !== state.gameOver) return;
-    if (frames % 10 === 0) this.frame = (this.frame + 1) % this.tap.length;
+    if (state.curr === state.Play) return;
+    if (frames % 10 === 0) {
+      this.frame = (this.frame + 1) % this.tap.length;
+    }
+  },
+
+  drawCentered(img) {
+    sctx.drawImage(
+      img,
+      (scrn.width - img.width)/2,
+      (scrn.height - img.height)/2
+    );
+  },
+
+  drawAt(img, x, y) {
+    sctx.drawImage(img, x, y);
   }
 };
-
-// helpers for UI
-function drawSpriteCentered(img) {
-  sctx.drawImage(
-    img,
-    (scrn.width - img.width)/2,
-    (scrn.height - img.height)/2
-  );
-}
-function drawSpriteAt(img, x, y) {
-  sctx.drawImage(img, x, y);
-}
 
 // ─── PRELOAD ASSETS ───
 gnd.sprite.src          = "img/ground.png";
 bg.sprite.src           = "img/BG.png";
 pipe.top.sprite.src     = "img/toppipe.png";
 pipe.bot.sprite.src     = "img/botpipe.png";
-UI.getReady.sprite.src  = "img/getready.png";
 UI.gameOver.sprite.src  = "img/go.png";
+UI.getReady.sprite.src  = "img/getready.png";
 UI.tap[0].sprite.src    = "img/tap/t0.png";
 UI.tap[1].sprite.src    = "img/tap/t1.png";
 bird.animations[0].sprite.src = "img/bird/b0.png";
