@@ -5,94 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flappy Bird Clone</title>
   <style>
-    /* Base page */
+    /* no scrollbars, fill parent */
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
-      background: #000;       /* black to hide letterbox bars */
-      overflow: hidden;
-    }
-
-    /* Stage wraps the canvas and handles centering/letterboxing */
-    #stage {
+      overflow: hidden; background: #70c5ce;
       position: relative;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;    /* center the canvas */
-      background: #000;
     }
-
-    /* Canvas: preserve aspect, scale up as large as possible without distortion */
+    /* responsive canvas */
     #canvas {
-      display: block;
-      image-rendering: pixelated;       /* keep retro sharpness */
-      width: min(100vw, calc(100vh * 0.6666667));  /* 2:3 ratio → width = 2/3 * height */
-      height: auto;
-      /* When very tall/narrow, clamp by height instead */
-      max-height: min(100vh, calc(100vw * 1.5));   /* height = 3/2 * width */
-      max-width: 100vw;
-      outline: none;
+      display: block; width:100%; height:100%;
+      image-rendering: pixelated;
     }
-
-    /* Fullscreen adjustments (works across engines) */
-    :fullscreen #stage,
-    #stage:fullscreen,
-    :-webkit-full-screen #stage,
-    #stage:-webkit-full-screen {
-      width: 100vw;
-      height: 100vh;
-      background: #000;
-    }
-
-    /* Fullscreen button */
+    /* fullscreen button */
     #fullscreenBtn {
-      position: absolute;
-      top: 10px; right: 10px;
-      z-index: 2;
-      padding: 6px 10px; font-size: 14px;
-      background: rgba(0,0,0,0.5); color: #fff;
-      border: none; border-radius: 6px; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      position:absolute; top:10px; right:10px;
+      z-index:1; padding:6px 10px; font-size:14px;
+      background:rgba(0,0,0,0.5); color:#fff;
+      border:none; border-radius:4px; cursor:pointer;
     }
-    #fullscreenBtn:focus { outline: 2px solid #fff3; outline-offset: 2px; }
   </style>
 </head>
 <body>
-  <div id="stage">
-    <button id="fullscreenBtn" type="button" aria-label="Fullscreen">Full Screen</button>
-    <canvas id="canvas" width="320" height="480"></canvas>
-  </div>
+  <button id="fullscreenBtn">Full Screen</button>
+  <canvas id="canvas" width="320" height="480"></canvas>
 
-  <!-- Load game logic (defines window.requestGameFullscreen) -->
-  <script src="game.js?v=5"></script>
-
+  <script src="game.js"></script>
   <script>
-    // Best-effort: let parent know the embed is ready
-    try { window.parent.postMessage("EMBED_READY","*"); } catch(e) {}
+    // 1) Notify parent that embed is loaded
+    window.parent.postMessage("EMBED_READY","*");
 
-    // Wire the fullscreen button directly to the helper (gesture-safe)
-    (function () {
-      const btn = document.getElementById('fullscreenBtn');
-      const stage = document.getElementById('stage');
-      if (!btn) return;
-
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof window.requestGameFullscreen === 'function') {
-          // Make the STAGE element go fullscreen (not the canvas),
-          // so CSS can letterbox/center properly.
-          window.requestGameFullscreen(stage);
-        } else {
-          // Fallback: try native; otherwise do nothing (we're skipping iOS fullscreen)
-          try {
-            if (stage.requestFullscreen) stage.requestFullscreen();
-            else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
-          } catch (_e) {}
-        }
-      }, { passive: false });
-    })();
+    // 2) Fullscreen toggle
+    const btn = document.getElementById('fullscreenBtn');
+    const c   = document.getElementById('canvas');
+    btn.addEventListener('click', () => {
+      if (c.requestFullscreen)           c.requestFullscreen();
+      else if (c.webkitRequestFullscreen) c.webkitRequestFullscreen();
+    });
   </script>
 </body>
 </html>
