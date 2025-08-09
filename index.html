@@ -32,29 +32,55 @@
   <button id="fullscreenBtn">Full Screen</button>
   <canvas id="canvas" width="320" height="480"></canvas>
 
-  <!-- Load game logic (defines window.requestGameFullscreen) -->
-  <script src="game.js?v=3"></script>
+  <!-- Your game logic (must define window.requestGameFullscreen as in the updated game.js) -->
+  <script src="game.js"></script>
 
   <script>
-    // Notify parent that embed is loaded (best-effort)
+    // 1) Notify parent that embed is loaded
     try { window.parent.postMessage("EMBED_READY","*"); } catch(e) {}
 
-    // Wire the fullscreen button directly to the helper (gesture-safe)
+    // 2) Wire the fullscreen button to the mobile-safe helper with a robust fallback
     (function () {
       const btn = document.getElementById('fullscreenBtn');
       const canvas = document.getElementById('canvas');
-      if (!btn) return;
 
-      btn.addEventListener('click', function (e) {
+      function fallbackPost() {
+        // Ask the Wix page to open the full-bleed fallback (/gulag-full)
+        try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e) {}
+      }
+
+      btn.addEventListener('click', async (e) => {
         e.preventDefault();
+
+        // Prefer the canvas wrapper so the whole game area fills the screen
         const target = (canvas && canvas.parentNode) || document.documentElement;
 
         if (typeof window.requestGameFullscreen === 'function') {
-          // Synchronous helper call — tries FS, falls back by posting to parent on iOS
+          // Use the helper we added in game.js (tries fullscreen, then posts fallback)
           window.requestGameFullscreen(target);
         } else {
-          // If helper not ready, immediately ask parent for fallback
-          try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+          // Safety net if game.js hasn't loaded/defined the helper yet
+          try {
+            if (target.requestFullscreen) {
+              await target.requestFullscreen();
+            } else if (target.webkitRequestFullscreen) {
+              target.webkitRequestFullscreen();
+            } else {
+              // No API available → fallback
+              fallbackPost();
+              return;
+            }
+            // Give iOS a beat; if not actually fullscreen, fallback
+            setTimeout(() => {
+              const inFS =
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement;
+              if (!inFS) fallbackPost();
+            }, 300);
+          } catch (_) {
+            fallbackPost();
+          }
         }
       }, { passive: false });
     })();
