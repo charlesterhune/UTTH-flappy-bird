@@ -7,52 +7,67 @@ const RAD  = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
-// ===== mobile-safe fullscreen helper =====
-async function requestGameFullscreen(targetEl) {
-  const el = targetEl || document.documentElement;
-
+/* ===========================
+   MOBILE-SAFE FULLSCREEN SHIM
+   =========================== */
+// Try fullscreen on a target; if blocked (iOS in iframe), request parent fallback
+async function _tryFullscreen(el) {
   try {
-    // If already fullscreen, exit (desktop convenience)
-    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-      if (document.exitFullscreen) await document.exitFullscreen();
-      else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-      else if (document.msExitFullscreen) await document.msExitFullscreen();
-      return true;
+    // Standards first (returns a promise in most browsers)
+    if (el.requestFullscreen) {
+      const p = el.requestFullscreen();
+      if (p && typeof p.catch === "function") {
+        await p.catch(() => {}); // swallow; we detect below
+      }
+      return;
     }
-
-    // Try standards + vendor-prefixed APIs
-    if (el.requestFullscreen) { await el.requestFullscreen(); return true; }
-    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return true; } // iOS Safari
-    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return true; }
+    // WebKit (older iOS Safari)
+    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return; }
+    // MS legacy
+    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return; }
   } catch (_) {
-    // fall through to fallback
+    // ignore; we'll handle fallback
   }
-
-  // Fallback for iOS/iframe-locked browsers → tell Wix page to open full-bleed page
-  try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
-  return false;
 }
 
-// Optional: bind to a button with id="fullscreenBtn" if present
-window.addEventListener('DOMContentLoaded', () => {
-  const fsBtn = document.getElementById('fullscreenBtn');
+// Detect if we actually entered fullscreen; if not, notify parent to open full-bleed page
+function _ensureOrFallback() {
+  const inFS =
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.msFullscreenElement;
+  if (!inFS) {
+    try { window.parent.postMessage({ cmd: "openFullscreenFlappy" }, "*"); } catch(e) {}
+  }
+}
+
+// Public helper you can call from any button/menu
+window.requestGameFullscreen = async function(targetEl) {
+  const el = targetEl || (scrn && scrn.parentNode) || document.documentElement;
+  await _tryFullscreen(el);
+  // iOS often "fails silently"; give it a moment and verify
+  setTimeout(_ensureOrFallback, 300);
+};
+
+// OPTIONAL convenience: bind to a #fullscreenBtn if it exists
+window.addEventListener("DOMContentLoaded", () => {
+  const fsBtn = document.getElementById("fullscreenBtn");
   if (fsBtn) {
-    fsBtn.addEventListener('click', (e) => {
+    fsBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      // Prefer the canvas wrapper (parentNode) so the whole game goes fullscreen
-      const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
-      requestGameFullscreen(target);
+      window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
     });
   }
 });
 
-// Desktop helper: press "F" to toggle fullscreen (no effect on mobile users not using keyboards)
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'f' || e.key === 'F') {
-    const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
-    requestGameFullscreen(target);
+// OPTIONAL desktop convenience: press "F" to toggle fullscreen/fallback
+window.addEventListener("keydown", (e) => {
+  if (e.key === "f" || e.key === "F") {
+    window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
   }
 });
+
+/* === END FULLSCREEN SHIM === */
 
 // force full-size canvas
 scrn.width       = internalW;
