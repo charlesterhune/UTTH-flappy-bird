@@ -8,66 +8,69 @@ const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
 /* ===========================
-   MOBILE-SAFE FULLSCREEN SHIM
+   MOBILE-SAFE FULLSCREEN SHIM (gesture-safe)
    =========================== */
-// Try fullscreen on a target; if blocked (iOS in iframe), request parent fallback
-async function _tryFullscreen(el) {
+function inIframe() {
+  try { return window.self !== window.top; } catch (e) { return true; }
+}
+function isiOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// Public helper you can call from any button/menu.
+// IMPORTANT: Call directly inside the click handler (no awaits before it).
+window.requestGameFullscreen = function(targetEl) {
+  const el = targetEl || (scrn && scrn.parentNode) || document.documentElement;
+
+  // iOS + iframe? Don’t even try — post fallback immediately.
+  if (isiOS() && inIframe()) {
+    try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+    return;
+  }
+
+  // Try standard APIs synchronously inside the gesture
   try {
-    // Standards first (returns a promise in most browsers)
-    if (el.requestFullscreen) {
-      const p = el.requestFullscreen();
-      if (p && typeof p.catch === "function") {
-        await p.catch(() => {}); // swallow; we detect below
-      }
+    if (el.requestFullscreen) { el.requestFullscreen(); }
+    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); } // older Safari
+    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+    else {
+      // No API — fallback
+      try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
       return;
     }
-    // WebKit (older iOS Safari)
-    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return; }
-    // MS legacy
-    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return; }
   } catch (_) {
-    // ignore; we'll handle fallback
+    // Error → fallback
+    try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+    return;
   }
-}
 
-// Detect if we actually entered fullscreen; if not, notify parent to open full-bleed page
-function _ensureOrFallback() {
-  const inFS =
-    document.fullscreenElement ||
-    document.webkitFullscreenElement ||
-    document.msFullscreenElement;
-  if (!inFS) {
-    try { window.parent.postMessage({ cmd: "openFullscreenFlappy" }, "*"); } catch(e) {}
-  }
-}
-
-// Public helper you can call from any button/menu
-window.requestGameFullscreen = async function(targetEl) {
-  const el = targetEl || (scrn && scrn.parentNode) || document.documentElement;
-  await _tryFullscreen(el);
-  // iOS often "fails silently"; give it a moment and verify
-  setTimeout(_ensureOrFallback, 300);
+  // Quick verify after a tick: if still not fullscreen (policy blocked), fallback
+  setTimeout(() => {
+    const inFS = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    if (!inFS) {
+      try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+    }
+  }, 150);
 };
 
-// OPTIONAL convenience: bind to a #fullscreenBtn if it exists
-window.addEventListener("DOMContentLoaded", () => {
-  const fsBtn = document.getElementById("fullscreenBtn");
+// Optional auto-bind if you have a #fullscreenBtn in the page
+window.addEventListener('DOMContentLoaded', () => {
+  const fsBtn = document.getElementById('fullscreenBtn');
   if (fsBtn) {
-    fsBtn.addEventListener("click", (e) => {
+    fsBtn.addEventListener('click', (e) => {
       e.preventDefault();
       window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
-    });
+    }, { passive: false });
   }
 });
 
-// OPTIONAL desktop convenience: press "F" to toggle fullscreen/fallback
-window.addEventListener("keydown", (e) => {
-  if (e.key === "f" || e.key === "F") {
+// Optional desktop helper
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') {
     window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
   }
 });
-
-/* === END FULLSCREEN SHIM === */
+/* === END SHIM === */
 
 // force full-size canvas
 scrn.width       = internalW;
@@ -313,3 +316,4 @@ function draw() {
 }
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
+
