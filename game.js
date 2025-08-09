@@ -7,6 +7,53 @@ const RAD  = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
+// ===== mobile-safe fullscreen helper =====
+async function requestGameFullscreen(targetEl) {
+  const el = targetEl || document.documentElement;
+
+  try {
+    // If already fullscreen, exit (desktop convenience)
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) await document.msExitFullscreen();
+      return true;
+    }
+
+    // Try standards + vendor-prefixed APIs
+    if (el.requestFullscreen) { await el.requestFullscreen(); return true; }
+    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return true; } // iOS Safari
+    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return true; }
+  } catch (_) {
+    // fall through to fallback
+  }
+
+  // Fallback for iOS/iframe-locked browsers → tell Wix page to open full-bleed page
+  try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+  return false;
+}
+
+// Optional: bind to a button with id="fullscreenBtn" if present
+window.addEventListener('DOMContentLoaded', () => {
+  const fsBtn = document.getElementById('fullscreenBtn');
+  if (fsBtn) {
+    fsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Prefer the canvas wrapper (parentNode) so the whole game goes fullscreen
+      const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
+      requestGameFullscreen(target);
+    });
+  }
+});
+
+// Desktop helper: press "F" to toggle fullscreen (no effect on mobile users not using keyboards)
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') {
+    const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
+    requestGameFullscreen(target);
+  }
+});
+
 // force full-size canvas
 scrn.width       = internalW;
 scrn.height      = internalH;
@@ -251,3 +298,4 @@ function draw() {
 }
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
+
