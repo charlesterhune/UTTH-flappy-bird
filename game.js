@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 1;      // how many pipe-pairs to pass before “win”
+const winScore    = 30;      // how many pipe-pairs to pass before “win”
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -8,45 +8,39 @@ const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
 /* ===========================
-   MOBILE-SAFE FULLSCREEN SHIM
+   DESKTOP FULLSCREEN SHIM (gesture-safe, skip iOS-in-iframe)
    =========================== */
-// Try fullscreen on a target; if blocked (iOS in iframe), request parent fallback
-async function _tryFullscreen(el) {
+function inIframe() {
+  try { return window.self !== window.top; } catch (e) { return true; }
+}
+function isiOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/**
+ * Call directly in the click handler.
+ * - Targets the canvas' parent (stage) if available so CSS can letterbox.
+ * - No async/await before the FS call (keeps the user gesture valid).
+ * - On iOS inside an iframe: do nothing (skips broken FS there).
+ */
+window.requestGameFullscreen = function(targetEl) {
+  const el =
+    targetEl ||
+    (scrn && scrn.parentNode) ||
+    document.documentElement;
+
+  if (isiOS() && inIframe()) {
+    // Intentionally skip iOS-in-iframe fullscreen
+    return;
+  }
+
   try {
-    // Standards first (returns a promise in most browsers)
-    if (el.requestFullscreen) {
-      const p = el.requestFullscreen();
-      if (p && typeof p.catch === "function") {
-        await p.catch(() => {}); // swallow; we detect below
-      }
-      return;
-    }
-    // WebKit (older iOS Safari)
-    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return; }
-    // MS legacy
-    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return; }
+    if (el.requestFullscreen) { el.requestFullscreen(); }
+    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); } // older Safari
+    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
   } catch (_) {
-    // ignore; we'll handle fallback
+    // ignore
   }
-}
-
-// Detect if we actually entered fullscreen; if not, notify parent to open full-bleed page
-function _ensureOrFallback() {
-  const inFS =
-    document.fullscreenElement ||
-    document.webkitFullscreenElement ||
-    document.msFullscreenElement;
-  if (!inFS) {
-    try { window.parent.postMessage({ cmd: "openFullscreenFlappy" }, "*"); } catch(e) {}
-  }
-}
-
-// Public helper you can call from any button/menu
-window.requestGameFullscreen = async function(targetEl) {
-  const el = targetEl || (scrn && scrn.parentNode) || document.documentElement;
-  await _tryFullscreen(el);
-  // iOS often "fails silently"; give it a moment and verify
-  setTimeout(_ensureOrFallback, 300);
 };
 
 // OPTIONAL convenience: bind to a #fullscreenBtn if it exists
@@ -56,11 +50,11 @@ window.addEventListener("DOMContentLoaded", () => {
     fsBtn.addEventListener("click", (e) => {
       e.preventDefault();
       window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
-    });
+    }, { passive: false });
   }
 });
 
-// OPTIONAL desktop convenience: press "F" to toggle fullscreen/fallback
+// OPTIONAL desktop convenience: press "F" to request fullscreen
 window.addEventListener("keydown", (e) => {
   if (e.key === "f" || e.key === "F") {
     window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
@@ -69,11 +63,12 @@ window.addEventListener("keydown", (e) => {
 
 /* === END FULLSCREEN SHIM === */
 
-// force full-size canvas
-scrn.width       = internalW;
-scrn.height      = internalH;
-scrn.style.width = "100%";
-scrn.style.height= "100%";
+// keep internal resolution; let CSS control visual scaling to preserve 2:3
+scrn.width  = internalW;
+scrn.height = internalH;
+// REMOVE the stretching (these caused the distortion):
+// scrn.style.width = "100%";
+// scrn.style.height = "100%";
 
 scrn.tabIndex = 1;
 scrn.addEventListener("click", () => {
@@ -313,3 +308,4 @@ function draw() {
 }
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
+
