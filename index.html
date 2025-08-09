@@ -32,55 +32,29 @@
   <button id="fullscreenBtn">Full Screen</button>
   <canvas id="canvas" width="320" height="480"></canvas>
 
-  <!-- Your game logic (must define window.requestGameFullscreen as in the updated game.js) -->
-  <script src="game.js"></script>
+  <!-- Load game logic (defines window.requestGameFullscreen) -->
+  <script src="game.js?v=3"></script>
 
   <script>
-    // 1) Notify parent that embed is loaded
+    // Notify parent that embed is loaded (best-effort)
     try { window.parent.postMessage("EMBED_READY","*"); } catch(e) {}
 
-    // 2) Wire the fullscreen button to the mobile-safe helper with a robust fallback
+    // Wire the fullscreen button directly to the helper (gesture-safe)
     (function () {
       const btn = document.getElementById('fullscreenBtn');
       const canvas = document.getElementById('canvas');
+      if (!btn) return;
 
-      function fallbackPost() {
-        // Ask the Wix page to open the full-bleed fallback (/gulag-full)
-        try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e) {}
-      }
-
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
-
-        // Prefer the canvas wrapper so the whole game area fills the screen
         const target = (canvas && canvas.parentNode) || document.documentElement;
 
         if (typeof window.requestGameFullscreen === 'function') {
-          // Use the helper we added in game.js (tries fullscreen, then posts fallback)
+          // Synchronous helper call — tries FS, falls back by posting to parent on iOS
           window.requestGameFullscreen(target);
         } else {
-          // Safety net if game.js hasn't loaded/defined the helper yet
-          try {
-            if (target.requestFullscreen) {
-              await target.requestFullscreen();
-            } else if (target.webkitRequestFullscreen) {
-              target.webkitRequestFullscreen();
-            } else {
-              // No API available → fallback
-              fallbackPost();
-              return;
-            }
-            // Give iOS a beat; if not actually fullscreen, fallback
-            setTimeout(() => {
-              const inFS =
-                document.fullscreenElement ||
-                document.webkitFullscreenElement ||
-                document.msFullscreenElement;
-              if (!inFS) fallbackPost();
-            }, 300);
-          } catch (_) {
-            fallbackPost();
-          }
+          // If helper not ready, immediately ask parent for fallback
+          try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
         }
       }, { passive: false });
     })();
