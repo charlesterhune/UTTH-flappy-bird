@@ -7,65 +7,54 @@ const RAD  = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
-/* ===========================
-   DESKTOP FULLSCREEN SHIM (gesture-safe, iOS iframe skipped)
-   =========================== */
-function inIframe() {
-  try { return window.self !== window.top; } catch (e) { return true; }
-}
-function isiOS() {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
-/**
- * Call this directly inside a click handler.
- * - Uses the canvas' parent node (stage) if available, so CSS can letterbox.
- * - No async/await before the FS call (keeps the user gesture valid).
- * - On iOS inside an iframe: do nothing (you chose to give up on iOS FS).
- */
-window.requestGameFullscreen = function(targetEl) {
-  const el =
-    targetEl ||
-    (scrn && scrn.parentNode) ||
-    document.documentElement;
-
-  // Skip iOS-in-iframe fullscreen entirely
-  if (isiOS() && inIframe()) {
-    return;
-  }
+// ===== mobile-safe fullscreen helper =====
+async function requestGameFullscreen(targetEl) {
+  const el = targetEl || document.documentElement;
 
   try {
-    if (el.requestFullscreen) { el.requestFullscreen(); }
-    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); } // older Safari
-    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
-    // If no API, silently do nothing
+    // If already fullscreen, exit (desktop convenience)
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) await document.msExitFullscreen();
+      return true;
+    }
+
+    // Try standards + vendor-prefixed APIs
+    if (el.requestFullscreen) { await el.requestFullscreen(); return true; }
+    if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return true; } // iOS Safari
+    if (el.msRequestFullscreen) { el.msRequestFullscreen(); return true; }
   } catch (_) {
-    // Silently ignore errors
+    // fall through to fallback
   }
-};
 
-// OPTIONAL convenience: bind to a #fullscreenBtn if it exists
-window.addEventListener("DOMContentLoaded", () => {
-  const fsBtn = document.getElementById("fullscreenBtn");
+  // Fallback for iOS/iframe-locked browsers → tell Wix page to open full-bleed page
+  try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e){}
+  return false;
+}
+
+// Optional: bind to a button with id="fullscreenBtn" if present
+window.addEventListener('DOMContentLoaded', () => {
+  const fsBtn = document.getElementById('fullscreenBtn');
   if (fsBtn) {
-    fsBtn.addEventListener("click", (e) => {
+    fsBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      // Prefer the canvas wrapper so CSS can control aspect/letterboxing
-      window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
-    }, { passive: false });
+      // Prefer the canvas wrapper (parentNode) so the whole game goes fullscreen
+      const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
+      requestGameFullscreen(target);
+    });
   }
 });
 
-// OPTIONAL desktop convenience: press "F" to request fullscreen
-window.addEventListener("keydown", (e) => {
-  if (e.key === "f" || e.key === "F") {
-    window.requestGameFullscreen((scrn && scrn.parentNode) || document.documentElement);
+// Desktop helper: press "F" to toggle fullscreen (no effect on mobile users not using keyboards)
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') {
+    const target = scrn && scrn.parentNode ? scrn.parentNode : document.documentElement;
+    requestGameFullscreen(target);
   }
 });
 
-/* === END FULLSCREEN SHIM === */
-
-// force full-size canvas (internal resolution stays 320x480)
+// force full-size canvas
 scrn.width       = internalW;
 scrn.height      = internalH;
 scrn.style.width = "100%";
