@@ -23,6 +23,8 @@
       z-index:1; padding:6px 10px; font-size:14px;
       background:rgba(0,0,0,0.5); color:#fff;
       border:none; border-radius:4px; cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
   </style>
 </head>
@@ -30,18 +32,58 @@
   <button id="fullscreenBtn">Full Screen</button>
   <canvas id="canvas" width="320" height="480"></canvas>
 
+  <!-- Your game logic (must define window.requestGameFullscreen as in the updated game.js) -->
   <script src="game.js"></script>
+
   <script>
     // 1) Notify parent that embed is loaded
-    window.parent.postMessage("EMBED_READY","*");
+    try { window.parent.postMessage("EMBED_READY","*"); } catch(e) {}
 
-    // 2) Fullscreen toggle
-    const btn = document.getElementById('fullscreenBtn');
-    const c   = document.getElementById('canvas');
-    btn.addEventListener('click', () => {
-      if (c.requestFullscreen)           c.requestFullscreen();
-      else if (c.webkitRequestFullscreen) c.webkitRequestFullscreen();
-    });
+    // 2) Wire the fullscreen button to the mobile-safe helper with a robust fallback
+    (function () {
+      const btn = document.getElementById('fullscreenBtn');
+      const canvas = document.getElementById('canvas');
+
+      function fallbackPost() {
+        // Ask the Wix page to open the full-bleed fallback (/gulag-full)
+        try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e) {}
+      }
+
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // Prefer the canvas wrapper so the whole game area fills the screen
+        const target = (canvas && canvas.parentNode) || document.documentElement;
+
+        if (typeof window.requestGameFullscreen === 'function') {
+          // Use the helper we added in game.js (tries fullscreen, then posts fallback)
+          window.requestGameFullscreen(target);
+        } else {
+          // Safety net if game.js hasn't loaded/defined the helper yet
+          try {
+            if (target.requestFullscreen) {
+              await target.requestFullscreen();
+            } else if (target.webkitRequestFullscreen) {
+              target.webkitRequestFullscreen();
+            } else {
+              // No API available → fallback
+              fallbackPost();
+              return;
+            }
+            // Give iOS a beat; if not actually fullscreen, fallback
+            setTimeout(() => {
+              const inFS =
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement;
+              if (!inFS) fallbackPost();
+            }, 300);
+          } catch (_) {
+            fallbackPost();
+          }
+        }
+      }, { passive: false });
+    })();
   </script>
 </body>
 </html>
