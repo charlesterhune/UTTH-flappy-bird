@@ -5,82 +5,91 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flappy Bird Clone</title>
   <style>
-    /* no scrollbars, fill parent */
+    /* Base page */
     html, body {
       margin: 0; padding: 0;
       width: 100%; height: 100%;
-      overflow: hidden; background: #70c5ce;
+      background: #000;       /* black to hide letterbox bars */
+      overflow: hidden;
+    }
+
+    /* Stage wraps the canvas and handles centering/letterboxing */
+    #stage {
       position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;    /* center the canvas */
+      background: #000;
     }
-    /* responsive canvas */
+
+    /* Canvas: preserve aspect, scale up as large as possible without distortion */
     #canvas {
-      display: block; width:100%; height:100%;
-      image-rendering: pixelated;
+      display: block;
+      image-rendering: pixelated;       /* keep retro sharpness */
+      width: min(100vw, calc(100vh * 0.6666667));  /* 2:3 ratio → width = 2/3 * height */
+      height: auto;
+      /* When very tall/narrow, clamp by height instead */
+      max-height: min(100vh, calc(100vw * 1.5));   /* height = 3/2 * width */
+      max-width: 100vw;
+      outline: none;
     }
-    /* fullscreen button */
+
+    /* Fullscreen adjustments (works across engines) */
+    :fullscreen #stage,
+    #stage:fullscreen,
+    :-webkit-full-screen #stage,
+    #stage:-webkit-full-screen {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
+
+    /* Fullscreen button */
     #fullscreenBtn {
-      position:absolute; top:10px; right:10px;
-      z-index:1; padding:6px 10px; font-size:14px;
-      background:rgba(0,0,0,0.5); color:#fff;
-      border:none; border-radius:4px; cursor:pointer;
+      position: absolute;
+      top: 10px; right: 10px;
+      z-index: 2;
+      padding: 6px 10px; font-size: 14px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      border: none; border-radius: 6px; cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
+    #fullscreenBtn:focus { outline: 2px solid #fff3; outline-offset: 2px; }
   </style>
 </head>
 <body>
-  <button id="fullscreenBtn">Full Screen</button>
-  <canvas id="canvas" width="320" height="480"></canvas>
+  <div id="stage">
+    <button id="fullscreenBtn" type="button" aria-label="Fullscreen">Full Screen</button>
+    <canvas id="canvas" width="320" height="480"></canvas>
+  </div>
 
-  <!-- Your game logic (must define window.requestGameFullscreen as in the updated game.js) -->
-  <script src="game.js"></script>
+  <!-- Load game logic (defines window.requestGameFullscreen) -->
+  <script src="game.js?v=5"></script>
 
   <script>
-    // 1) Notify parent that embed is loaded
+    // Best-effort: let parent know the embed is ready
     try { window.parent.postMessage("EMBED_READY","*"); } catch(e) {}
 
-    // 2) Wire the fullscreen button to the mobile-safe helper with a robust fallback
+    // Wire the fullscreen button directly to the helper (gesture-safe)
     (function () {
       const btn = document.getElementById('fullscreenBtn');
-      const canvas = document.getElementById('canvas');
+      const stage = document.getElementById('stage');
+      if (!btn) return;
 
-      function fallbackPost() {
-        // Ask the Wix page to open the full-bleed fallback (/gulag-full)
-        try { window.parent.postMessage({ cmd: 'openFullscreenFlappy' }, '*'); } catch(e) {}
-      }
-
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
-
-        // Prefer the canvas wrapper so the whole game area fills the screen
-        const target = (canvas && canvas.parentNode) || document.documentElement;
-
         if (typeof window.requestGameFullscreen === 'function') {
-          // Use the helper we added in game.js (tries fullscreen, then posts fallback)
-          window.requestGameFullscreen(target);
+          // Make the STAGE element go fullscreen (not the canvas),
+          // so CSS can letterbox/center properly.
+          window.requestGameFullscreen(stage);
         } else {
-          // Safety net if game.js hasn't loaded/defined the helper yet
+          // Fallback: try native; otherwise do nothing (we're skipping iOS fullscreen)
           try {
-            if (target.requestFullscreen) {
-              await target.requestFullscreen();
-            } else if (target.webkitRequestFullscreen) {
-              target.webkitRequestFullscreen();
-            } else {
-              // No API available → fallback
-              fallbackPost();
-              return;
-            }
-            // Give iOS a beat; if not actually fullscreen, fallback
-            setTimeout(() => {
-              const inFS =
-                document.fullscreenElement ||
-                document.webkitFullscreenElement ||
-                document.msFullscreenElement;
-              if (!inFS) fallbackPost();
-            }, 300);
-          } catch (_) {
-            fallbackPost();
-          }
+            if (stage.requestFullscreen) stage.requestFullscreen();
+            else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          } catch (_e) {}
         }
       }, { passive: false });
     })();
