@@ -1,4 +1,4 @@
-<!-- index.html (head styles) -->
+<!-- index.html -->
 <style>
   html, body { margin:0; height:100%; background:#000; overflow:hidden; }
   #stage {
@@ -28,7 +28,85 @@
     <canvas id="canvas" width="320" height="480"></canvas>
   </div>
 
+  <!-- Your game -->
   <script src="game.js?v=6"></script>
+
+  <!-- Anti-cheat shim: blocks console cheats without touching level code -->
+  <script>
+  (function (){
+    'use strict';
+
+    // 1) Block manual window.flappyWin() calls from the console (no-op them)
+    try {
+      if (typeof window.flappyWin === 'function') {
+        const real = window.flappyWin;
+        Object.defineProperty(window, 'flappyWin', {
+          configurable: false,
+          enumerable: false,
+          get() { 
+            // Expose a harmless stub to the outside world
+            return function(){ /* blocked */ };
+          },
+          set(v) {
+            // Ignore attempts to replace it via console
+            return true;
+          }
+        });
+        // Keep the real function accessible internally if your code captured it already
+        // (If your game calls window.flappyWin directly, consider refactoring in game.js to call a local win() instead.)
+        window.__flappyWin_real__ = real; // optional breadcrumb for your own debugging
+      }
+    } catch (e) {}
+
+    // 2) Make UI.score.curr resistant to console tampering
+    try {
+      if (window.UI && window.UI.score) {
+        // Preserve current value & expose a guarded property
+        let _curr = Number(window.UI.score.curr || 0);
+        Object.defineProperty(window.UI.score, 'curr', {
+          get(){ return _curr; },
+          set(v){
+            // Option A: ignore external writes entirely
+            // return true;
+
+            // Option B: clamp to a sane delta to avoid big jumps from console
+            const next = Number(v);
+            if (!Number.isFinite(next)) return true;
+            // Allow only small increments (e.g., +1) to pass; big jumps are ignored
+            if (next <= _curr + 1) { _curr = next; }
+            return true;
+          },
+          enumerable: true,
+          configurable: false
+        });
+      }
+    } catch (e) {}
+
+    // 3) Clamp pipe.gap so console can’t make it super wide
+    try {
+      if (window.pipe && 'gap' in window.pipe) {
+        let _gap = Number(window.pipe.gap || 120);
+        Object.defineProperty(window.pipe, 'gap', {
+          get(){ return _gap; },
+          set(v){
+            const n = Number(v);
+            if (!Number.isFinite(n)) return true;
+            // Clamp gap to a fair range (adjust to your liking)
+            _gap = Math.max(80, Math.min(160, n));
+            return true;
+          },
+          enumerable: true,
+          configurable: false
+        });
+      }
+    } catch (e) {}
+
+    // (Optional) Notify parent page if we detect tampering attempts
+    // try { parent.postMessage({ tk: 'flappy-guard-ready' }, '*'); } catch {}
+  })();
+  </script>
+
+  <!-- Fullscreen button wiring (unchanged) -->
   <script>
     // Fullscreen button calls your helper; pass the STAGE, not the canvas
     document.getElementById('fullscreenBtn').addEventListener('click', (e) => {
