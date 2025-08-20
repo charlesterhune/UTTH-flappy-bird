@@ -53,7 +53,7 @@ const GameSecurity = (function() {
     
     validateWin() {
       const gameTime = Date.now() - _gameStartTime;
-      const minGameTime = 30000; // 30 seconds minimum (reasonable)
+      const minGameTime = 30; // 30 seconds minimum (reasonable)
       
       // Check game time (prevent instant wins)
       if (gameTime < minGameTime) {
