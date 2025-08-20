@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 1;      // how many pipe-pairs to pass before "win"
+const winScore    = 30;      // how many pipe-pairs to pass before "win"
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -53,7 +53,7 @@ const GameSecurity = (function() {
     
     validateWin() {
       const gameTime = Date.now() - _gameStartTime;
-      const minGameTime = 30; // 30 seconds minimum (reasonable)
+      const minGameTime = 30000; // 30 seconds minimum (reasonable)
       
       // Check game time (prevent instant wins)
       if (gameTime < minGameTime) {
