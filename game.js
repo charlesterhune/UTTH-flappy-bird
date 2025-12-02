@@ -192,6 +192,7 @@ function resetToReady() {
   pipe.pipes      = [];
   UI.score.curr   = 0;
   SFX.played      = false;
+  winTimer        = 0;
 }
 
 let frames = 0, dx = 2;
@@ -299,8 +300,11 @@ const bird = {
           this.frame = (this.frame+1) % this.animations.length;
         this.y += this.speed; this.setRotation();
         this.speed += this.gravity;
-        if (this.y+r>=gnd.y || this.checkCollision())
-          state.curr = state.gameOver;
+        if (this.y+r>=gnd.y || this.checkCollision()) {
+          if (state.curr === state.Play) { // Only game over if still in Play state
+            state.curr = state.gameOver;
+          }
+        }
         break;
       case state.gameOver:
         if (!SFX.played) {
@@ -339,7 +343,7 @@ const bird = {
   checkCollision() {
     if (!pipe.pipes.length) return false;
     const spr = this.animations[0].sprite,
-          r   = (spr.width+spr.height)/4,
+          r   = spr.width/2.5,  // Smaller, tighter hitbox
           p   = pipe.pipes[0],
           roof  = p.y + pipe.top.sprite.height,
           floor = roof + pipe.gap, // Uses protected gap
