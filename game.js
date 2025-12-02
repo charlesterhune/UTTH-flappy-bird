@@ -409,10 +409,10 @@ UI.getReady.sprite.src = "img/getready.png";
 UI.gameOver.sprite.src = "img/go.png";
 UI.tap[0].sprite.src   = "img/tap/t0.png";
 UI.tap[1].sprite.src   = "img/tap/t1.png";
-bird.animations[0].sprite.src = "img/bird/b0.png";
-bird.animations[1].sprite.src = "img/bird/b1.png";
-bird.animations[2].sprite.src = "img/bird/b2.png";
-bird.animations[3].sprite.src = "img/bird/b0.png";
+bird.animations[0].sprite.src = "img/bird/s0.png";
+bird.animations[1].sprite.src = "img/bird/s1.png";
+bird.animations[2].sprite.src = "img/bird/s2.png";
+bird.animations[3].sprite.src = "img/bird/s0.png";
 
 function update() { 
   bird.update(); 
@@ -432,7 +432,7 @@ function draw() {
   if (showPasswordTimer > 0) {
     sctx.fillStyle = "#FFD700";
     sctx.strokeStyle = "#000";
-    sctx.lineWidth = 4;
+    sctx.lineWidth = 4
     sctx.font = "bold 30px Squada One";
     sctx.textAlign = "center";
     
