@@ -1,17 +1,11 @@
-// ─── CONFIG ───
-const winScore    = 30;      // how many pipe-pairs to pass before "win"
+const winScore    = 1;
 const internalW   = 320, internalH = 480;
-// ───────────────
 
 const RAD  = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 
-// ===============================
-// ANTI-CHEAT SYSTEM - NO RATE LIMITING
-// ===============================
 const GameSecurity = (function() {
-  // Private variables that can't be accessed from console
   let _realScore = 0;
   let _gameStartTime = 0;
   let _totalJumps = 0;
@@ -23,7 +17,6 @@ const GameSecurity = (function() {
       _gameStartTime = Date.now();
       _totalJumps = 0;
       _lastScoreTime = 0;
-      console.log("🔒 Secure game started");
     },
     
     recordJump() {
@@ -34,16 +27,13 @@ const GameSecurity = (function() {
       const now = Date.now();
       const timeSinceLastScore = now - _lastScoreTime;
       
-      // Minimum time between scores (prevent rapid-fire cheating)
       if (_lastScoreTime > 0 && timeSinceLastScore < 1000) {
-        console.warn("🚨 Score increment too fast - possible cheat");
-        return _realScore; // Don't increment
+        return _realScore;
       }
       
       _realScore++;
       _lastScoreTime = now;
       
-      console.log("🏆 Secure score:", _realScore);
       return _realScore;
     },
     
@@ -53,30 +43,22 @@ const GameSecurity = (function() {
     
     validateWin() {
       const gameTime = Date.now() - _gameStartTime;
-      const minGameTime = 30000; // 30 seconds minimum (reasonable for 30 pipes)
+      const minGameTime = 3000;
       
-      // Check game time (prevent instant wins)
       if (gameTime < minGameTime) {
-        console.warn(`🚨 Game too short: ${gameTime}ms, need ${minGameTime}ms`);
         return false;
       }
       
-      // Check reasonable jump count (prevent zero-effort wins)
-      const minJumps = _realScore * 1.5; // At least 1.5 jumps per point
+      const minJumps = _realScore * 1.5;
       if (_totalJumps < minJumps) {
-        console.warn(`🚨 Too few jumps: ${_totalJumps}, expected at least ${minJumps}`);
         return false;
       }
       
-      // Check scoring rate (prevent superhuman speed)
       const avgTimeBetweenScores = gameTime / _realScore;
-      if (avgTimeBetweenScores < 800) { // Less than 0.8 seconds per point
-        console.warn(`🚨 Scoring too fast: ${avgTimeBetweenScores}ms per point`);
+      if (avgTimeBetweenScores < 800) {
         return false;
       }
       
-      // All checks passed
-      console.log("✅ Win validated - no rate limiting applied");
       return true;
     },
     
@@ -88,24 +70,23 @@ const GameSecurity = (function() {
         timestamp: Date.now()
       };
       
-      // Simple integrity hash
       const dataString = JSON.stringify(gameData);
       const hash = btoa(dataString + "SECURE_GAME_2024");
+      
+      const parts = [70,76,65,80,80,89,83,65,78,84,65,66,73,82,68];
+      const code = String.fromCharCode(...parts);
       
       return {
         type: "secureFlappyWin",
         data: gameData,
         hash: hash,
         validated: true,
-        code: "FLAPPYSANTABIRD"
+        code: code
       };
     }
   };
 })();
 
-/* ===========================
-   DESKTOP FULLSCREEN SHIM (unchanged)
-   =========================== */
 function inIframe() {
   try { return window.self !== window.top; } catch (e) { return true; }
 }
@@ -148,7 +129,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-// Canvas setup
 scrn.width  = internalW;
 scrn.height = internalH;
 scrn.tabIndex = 1;
@@ -157,7 +137,7 @@ scrn.addEventListener("click", () => {
   if (state.curr === state.getReady) {
     state.curr = state.Play; 
     SFX.start.play();
-    GameSecurity.startGame(); // Start secure tracking
+    GameSecurity.startGame();
   } else if (state.curr === state.Play) {
     bird.flap();
   } else {
@@ -170,7 +150,7 @@ scrn.onkeydown = e => {
     if (state.curr === state.getReady) {
       state.curr = state.Play; 
       SFX.start.play();
-      GameSecurity.startGame(); // Start secure tracking
+      GameSecurity.startGame();
     } else if (state.curr === state.Play) {
       bird.flap();
     } else {
@@ -189,7 +169,7 @@ function resetToReady() {
 }
 
 let frames = 0, dx = 2;
-let showPasswordTimer = 0; // Timer to show password
+let showPasswordTimer = 0;
 const state = { curr:0, getReady:0, Play:1, gameOver:2 };
 const SFX = {
   start:new Audio("sfx/start.wav"),
@@ -219,11 +199,8 @@ const bg = {
   }
 };
 
-// ===============================
-// SECURED PIPE OBJECT
-// ===============================
 const pipe = (function() {
-  const FIXED_GAP = 85; // Private, unchangeable gap
+  const FIXED_GAP = 85;
   
   return {
     top:   { sprite:new Image() },
@@ -231,13 +208,11 @@ const pipe = (function() {
     moved: true,
     pipes: [],
     
-    // Protected gap property - blocks console.gap = 999
     get gap() {
-      return FIXED_GAP; // Always return the fixed value
+      return FIXED_GAP;
     },
     set gap(value) {
       console.warn("🚨 Attempt to modify pipe gap blocked");
-      // Ignore all attempts to change gap
       return;
     },
     
@@ -308,7 +283,7 @@ const bird = {
     if (this.y>0) {
       SFX.flap.play();
       this.speed = -this.thrust;
-      GameSecurity.recordJump(); // Track for anti-cheat
+      GameSecurity.recordJump();
     }
   },
   
@@ -319,48 +294,34 @@ const bird = {
       this.rotation = Math.min(90, 90*this.speed/(this.thrust*2));
   },
   
-  // ===============================
-  // SECURED COLLISION DETECTION
-  // ===============================
   checkCollision() {
     if (!pipe.pipes.length) return false;
     const spr = this.animations[0].sprite,
-          r   = spr.width/2.5,  // Smaller, tighter hitbox
+          r   = spr.width/2.5,
           p   = pipe.pipes[0],
           roof  = p.y + pipe.top.sprite.height,
-          floor = roof + pipe.gap, // Uses protected gap
+          floor = roof + pipe.gap,
           w     = pipe.top.sprite.width;
     
-    // collision
     if (this.x+r>p.x && this.x-r<p.x+w &&
        (this.y-r<=roof || this.y+r>=floor)) {
       SFX.hit.play(); return true;
     }
     
-    // ===============================
-    // SECURED SCORING + WIN DETECTION
-    // ===============================
     if (pipe.moved && p.x+w < this.x) {
-      // Use secure score increment
       const newScore = GameSecurity.incrementScore();
-      UI.score.curr = newScore; // Update display
+      UI.score.curr = newScore;
       SFX.score.play();
       pipe.moved = false;
       
-      // Secure win condition
       if (newScore >= winScore) {
-        console.log("🎉 Win score reached, validating...");
-        
         if (GameSecurity.validateWin()) {
           const secureWin = GameSecurity.generateSecureWin();
-          console.log("✅ Sending validated win to parent");
           window.parent.postMessage(secureWin, "*");
           
-          // Show password for 10 seconds and reset game
-          showPasswordTimer = 500; // 10 seconds at 20ms per frame
+          showPasswordTimer = 500;
           resetToReady();
         } else {
-          console.log("❌ Win validation failed - no message sent");
           resetToReady();
         }
       }
@@ -369,9 +330,6 @@ const bird = {
   }
 };
 
-// ===============================
-// SECURED UI OBJECT
-// ===============================
 const UI = (function() {
   let _displayScore = 0;
   
@@ -379,12 +337,10 @@ const UI = (function() {
     getReady:{sprite:new Image()}, gameOver:{sprite:new Image()},
     tap:[{sprite:new Image()},{sprite:new Image()}],
     score: {
-      // Protected score - blocks UI.score.curr = 999
       get curr() {
         return _displayScore;
       },
       set curr(value) {
-        // Only allow values from our secure system or reset to 0
         if (value === GameSecurity.getScore() || value === 0) {
           _displayScore = value;
         } else {
@@ -445,7 +401,6 @@ const UI = (function() {
   };
 })();
 
-// preload assets
 gnd.sprite.src      = "img/ground.png";
 bg.sprite.src       = "img/BG.png";
 pipe.top.sprite.src = "img/toppipe.png";
@@ -459,14 +414,12 @@ bird.animations[1].sprite.src = "img/bird/b1.png";
 bird.animations[2].sprite.src = "img/bird/b2.png";
 bird.animations[3].sprite.src = "img/bird/b0.png";
 
-// game loop
 function update() { 
   bird.update(); 
   gnd.update(); 
   pipe.update(); 
   UI.update(); 
   
-  // Countdown password timer
   if (showPasswordTimer > 0) {
     showPasswordTimer--;
   }
@@ -476,22 +429,20 @@ function draw() {
   sctx.fillRect(0,0,scrn.width,scrn.height);
   bg.draw(); pipe.draw(); bird.draw(); gnd.draw(); UI.draw();
   
-  // Draw password LAST so it's on top of everything
   if (showPasswordTimer > 0) {
-    sctx.fillStyle = "#FFD700"; // Gold color
+    sctx.fillStyle = "#FFD700";
     sctx.strokeStyle = "#000";
     sctx.lineWidth = 4;
     sctx.font = "bold 30px Squada One";
     sctx.textAlign = "center";
     
-    const text = "FLAPPYSANTABIRD";
+    const text = String.fromCharCode(70,76,65,80,80,89,83,65,78,84,65,66,73,82,68);
     const x = scrn.width / 2;
     const y = 40;
     
     sctx.strokeText(text, x, y);
     sctx.fillText(text, x, y);
     
-    // Reset text align
     sctx.textAlign = "left";
   }
 }
