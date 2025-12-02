@@ -402,7 +402,7 @@ const UI = (function() {
 })();
 
 gnd.sprite.src      = "img/ground/g00.png";
-bg.sprite.src       = "img/BG.png";
+bg.sprite.src       = "img/BGW.png";
 pipe.top.sprite.src = "img/toppipe.png";
 pipe.bot.sprite.src = "img/botpipe.png";
 UI.getReady.sprite.src = "img/getready.png";
