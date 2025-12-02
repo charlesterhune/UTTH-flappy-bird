@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 1;      // how many pipe-pairs to pass before "win"
+const winScore    = 30;      // how many pipe-pairs to pass before "win"
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -160,9 +160,6 @@ scrn.addEventListener("click", () => {
     GameSecurity.startGame(); // Start secure tracking
   } else if (state.curr === state.Play) {
     bird.flap();
-  } else if (state.curr === state.Win) {
-    // Allow click to restart early
-    resetToReady();
   } else {
     resetToReady();
   }
@@ -176,9 +173,6 @@ scrn.onkeydown = e => {
       GameSecurity.startGame(); // Start secure tracking
     } else if (state.curr === state.Play) {
       bird.flap();
-    } else if (state.curr === state.Win) {
-      // Allow keyboard to restart early
-      resetToReady();
     } else {
       resetToReady();
     }
@@ -192,12 +186,11 @@ function resetToReady() {
   pipe.pipes      = [];
   UI.score.curr   = 0;
   SFX.played      = false;
-  winTimer        = 0;
 }
 
 let frames = 0, dx = 2;
-let winTimer = 0; // Timer for win screen
-const state = { curr:0, getReady:0, Play:1, gameOver:2, Win:3 };
+let showPasswordTimer = 0; // Timer to show password
+const state = { curr:0, getReady:0, Play:1, gameOver:2 };
 const SFX = {
   start:new Audio("sfx/start.wav"),
   flap: new Audio("sfx/flap.wav"),
@@ -300,23 +293,12 @@ const bird = {
           this.frame = (this.frame+1) % this.animations.length;
         this.y += this.speed; this.setRotation();
         this.speed += this.gravity;
-        if (this.y+r>=gnd.y || this.checkCollision()) {
-          if (state.curr === state.Play) { // Only game over if still in Play state
-            state.curr = state.gameOver;
-          }
-        }
+        if (this.y+r>=gnd.y || this.checkCollision())
+          state.curr = state.gameOver;
         break;
       case state.gameOver:
         if (!SFX.played) {
           SFX.die.play(); SFX.played = true;
-        }
-        break;
-      case state.Win:
-        // Countdown timer and reset after 10 seconds
-        if (winTimer > 0) {
-          winTimer--;
-        } else {
-          resetToReady();
         }
         break;
     }
@@ -374,9 +356,9 @@ const bird = {
           console.log("✅ Sending validated win to parent");
           window.parent.postMessage(secureWin, "*");
           
-          // Switch to win state to display password
-          state.curr = state.Win;
-          winTimer = 500; // 10 seconds at 20ms per frame (500 frames)
+          // Show password for 10 seconds and reset game
+          showPasswordTimer = 500; // 10 seconds at 20ms per frame
+          resetToReady();
         } else {
           console.log("❌ Win validation failed - no message sent");
           resetToReady();
@@ -416,41 +398,34 @@ const UI = (function() {
     draw() {
       if (state.curr===state.getReady) this.drawAt(this.getReady.sprite);
       if (state.curr===state.gameOver) this.drawAt(this.gameOver.sprite);
-      if (state.curr===state.Win) this.drawWinScreen();
       this.drawTap(); this.drawScore();
+      
+      // Show password at top if timer is active
+      if (showPasswordTimer > 0) {
+        this.drawPassword();
+      }
     },
     
-    drawWinScreen() {
-      // Draw semi-transparent overlay
-      sctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-      sctx.fillRect(0, 0, scrn.width, scrn.height);
-      
-      // Draw password text
+    drawPassword() {
+      // Draw password text at top center
       sctx.fillStyle = "#FFD700"; // Gold color
       sctx.strokeStyle = "#000";
       sctx.lineWidth = 4;
-      sctx.font = "bold 40px Squada One";
+      sctx.font = "bold 30px Squada One";
       sctx.textAlign = "center";
       
       const text = "FLAPPYSANTABIRD";
       const x = scrn.width / 2;
-      const y = scrn.height / 2;
+      const y = 40;
       
       sctx.strokeText(text, x, y);
       sctx.fillText(text, x, y);
       
-      // Draw "YOU WIN!" above it
-      sctx.font = "bold 50px Squada One";
-      sctx.strokeText("YOU WIN!", x, y - 60);
-      sctx.fillText("YOU WIN!", x, y - 60);
-      
-      // Reset text align for other text
+      // Reset text align
       sctx.textAlign = "left";
     },
     
     drawTap() {
-      if (state.curr === state.Win) return; // Don't show tap on win screen
-      
       const img = this.tap[this.frame].sprite;
       const x = (scrn.width-img.width)/2,
             y = (scrn.height-img.height)/2 +
@@ -461,8 +436,6 @@ const UI = (function() {
     },
     
     drawScore() {
-      if (state.curr === state.Win) return; // Don't show score on win screen
-      
       sctx.fillStyle="#FFF"; sctx.strokeStyle="#000"; sctx.lineWidth=2;
       if (state.curr===state.Play) {
         sctx.font="35px Squada One";
@@ -511,7 +484,17 @@ bird.animations[2].sprite.src = "img/bird/b2.png";
 bird.animations[3].sprite.src = "img/bird/b0.png";
 
 // game loop
-function update() { bird.update(); gnd.update(); pipe.update(); UI.update(); }
+function update() { 
+  bird.update(); 
+  gnd.update(); 
+  pipe.update(); 
+  UI.update(); 
+  
+  // Countdown password timer
+  if (showPasswordTimer > 0) {
+    showPasswordTimer--;
+  }
+}
 function draw() {
   sctx.fillStyle = "#30c0df";
   sctx.fillRect(0,0,scrn.width,scrn.height);
