@@ -399,30 +399,6 @@ const UI = (function() {
       if (state.curr===state.getReady) this.drawAt(this.getReady.sprite);
       if (state.curr===state.gameOver) this.drawAt(this.gameOver.sprite);
       this.drawTap(); this.drawScore();
-      
-      // Show password at top if timer is active
-      if (showPasswordTimer > 0) {
-        this.drawPassword();
-      }
-    },
-    
-    drawPassword() {
-      // Draw password text at top center
-      sctx.fillStyle = "#FFD700"; // Gold color
-      sctx.strokeStyle = "#000";
-      sctx.lineWidth = 4;
-      sctx.font = "bold 30px Squada One";
-      sctx.textAlign = "center";
-      
-      const text = "FLAPPYSANTABIRD";
-      const x = scrn.width / 2;
-      const y = 40;
-      
-      sctx.strokeText(text, x, y);
-      sctx.fillText(text, x, y);
-      
-      // Reset text align
-      sctx.textAlign = "left";
     },
     
     drawTap() {
@@ -499,6 +475,25 @@ function draw() {
   sctx.fillStyle = "#30c0df";
   sctx.fillRect(0,0,scrn.width,scrn.height);
   bg.draw(); pipe.draw(); bird.draw(); gnd.draw(); UI.draw();
+  
+  // Draw password LAST so it's on top of everything
+  if (showPasswordTimer > 0) {
+    sctx.fillStyle = "#FFD700"; // Gold color
+    sctx.strokeStyle = "#000";
+    sctx.lineWidth = 4;
+    sctx.font = "bold 30px Squada One";
+    sctx.textAlign = "center";
+    
+    const text = "FLAPPYSANTABIRD";
+    const x = scrn.width / 2;
+    const y = 40;
+    
+    sctx.strokeText(text, x, y);
+    sctx.fillText(text, x, y);
+    
+    // Reset text align
+    sctx.textAlign = "left";
+  }
 }
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
