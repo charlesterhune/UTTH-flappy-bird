@@ -109,7 +109,6 @@ window.requestGameFullscreen = function(targetEl) {
     else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
     else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
   } catch (_) {
-    // ignore
   }
 };
 
@@ -181,21 +180,32 @@ const SFX = {
 };
 
 const gnd = {
-  sprite:new Image(), x:0, y:0,
+  sprite1:new Image(), sprite2:new Image(), x:0, y:0,
   draw() {
-    this.y = scrn.height - this.sprite.height;
-    sctx.drawImage(this.sprite, this.x, this.y);
+    this.y = scrn.height - this.sprite1.height;
+    const numTiles = Math.ceil(scrn.width / this.sprite1.width) + 1;
+    for (let i = 0; i < numTiles; i++) {
+      const sprite = (i % 2 === 0) ? this.sprite1 : this.sprite2;
+      sctx.drawImage(sprite, this.x + (i * this.sprite1.width), this.y);
+    }
   },
   update() {
     if (state.curr!==state.Play) return;
-    this.x = (this.x - dx) % (this.sprite.width/2);
+    this.x -= dx;
+    if (this.x <= -this.sprite1.width) {
+      this.x = 0;
+    }
   }
 };
 
 const bg = {
   sprite:new Image(),
   draw() {
-    sctx.drawImage(this.sprite, 0, scrn.height - this.sprite.height);
+    const y = scrn.height - this.sprite.height;
+    const numTiles = Math.ceil(scrn.width / this.sprite.width) + 1;
+    for (let i = 0; i < numTiles; i++) {
+      sctx.drawImage(this.sprite, i * this.sprite.width, y);
+    }
   }
 };
 
@@ -401,7 +411,8 @@ const UI = (function() {
   };
 })();
 
-gnd.sprite.src      = "img/ground/g00.png";
+gnd.sprite1.src     = "img/ground/g00.png";
+gnd.sprite2.src     = "img/ground/g11.png";
 bg.sprite.src       = "img/BGW.png";
 pipe.top.sprite.src = "img/toppipe.png";
 pipe.bot.sprite.src = "img/botpipe.png";
@@ -432,7 +443,7 @@ function draw() {
   if (showPasswordTimer > 0) {
     sctx.fillStyle = "#FFD700";
     sctx.strokeStyle = "#000";
-    sctx.lineWidth = 4
+    sctx.lineWidth = 4;
     sctx.font = "bold 30px Squada One";
     sctx.textAlign = "center";
     
@@ -449,43 +460,30 @@ function draw() {
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
 
-// ===============================
-// ANTI-TAMPERING PROTECTION
-// ===============================
 (function() {
   'use strict';
   
-  // Block direct window.postMessage manipulation
   const originalPostMessage = window.parent.postMessage;
   let messagesSent = 0;
   
   window.parent.postMessage = function(message, targetOrigin) {
-    // Only allow our secure messages
     if (message && message.type === "secureFlappyWin" && message.validated) {
       messagesSent++;
-      console.log(`📤 Secure message sent (#${messagesSent})`);
       return originalPostMessage.call(this, message, targetOrigin);
     } else if (typeof message === "string" && message === "flappyWin") {
-      console.warn("🚨 Legacy insecure win message blocked");
-      return; // Block old insecure messages
+      return;
     } else {
-      // Allow other legitimate messages
       return originalPostMessage.call(this, message, targetOrigin);
     }
   };
   
-  // Block access to GameSecurity object
   Object.defineProperty(window, 'GameSecurity', {
     get() { 
-      console.warn('🚨 Access to GameSecurity blocked');
       return undefined; 
     },
     set() { 
-      console.warn('🚨 Attempt to override GameSecurity blocked');
       return true; 
     },
     configurable: false
   });
-  
-  console.log("🔒 Game security initialized - no rate limiting");
 })();
