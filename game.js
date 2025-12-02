@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 2;      // how many pipe-pairs to pass before "win"
+const winScore    = 30;      // how many pipe-pairs to pass before "win"
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -160,6 +160,9 @@ scrn.addEventListener("click", () => {
     GameSecurity.startGame(); // Start secure tracking
   } else if (state.curr === state.Play) {
     bird.flap();
+  } else if (state.curr === state.Win) {
+    // Allow click to restart early
+    resetToReady();
   } else {
     resetToReady();
   }
@@ -173,6 +176,9 @@ scrn.onkeydown = e => {
       GameSecurity.startGame(); // Start secure tracking
     } else if (state.curr === state.Play) {
       bird.flap();
+    } else if (state.curr === state.Win) {
+      // Allow keyboard to restart early
+      resetToReady();
     } else {
       resetToReady();
     }
@@ -189,6 +195,7 @@ function resetToReady() {
 }
 
 let frames = 0, dx = 2;
+let winTimer = 0; // Timer for win screen
 const state = { curr:0, getReady:0, Play:1, gameOver:2, Win:3 };
 const SFX = {
   start:new Audio("sfx/start.wav"),
@@ -300,6 +307,14 @@ const bird = {
           SFX.die.play(); SFX.played = true;
         }
         break;
+      case state.Win:
+        // Countdown timer and reset after 10 seconds
+        if (winTimer > 0) {
+          winTimer--;
+        } else {
+          resetToReady();
+        }
+        break;
     }
   },
   
@@ -357,6 +372,7 @@ const bird = {
           
           // Switch to win state to display password
           state.curr = state.Win;
+          winTimer = 500; // 10 seconds at 20ms per frame (500 frames)
         } else {
           console.log("❌ Win validation failed - no message sent");
           resetToReady();
