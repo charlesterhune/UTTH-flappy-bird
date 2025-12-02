@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 30;      // how many pipe-pairs to pass before "win"
+const winScore    = 2;      // how many pipe-pairs to pass before "win"
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -96,7 +96,8 @@ const GameSecurity = (function() {
         type: "secureFlappyWin",
         data: gameData,
         hash: hash,
-        validated: true
+        validated: true,
+        code: "FLAPPYSANTABIRD"
       };
     }
   };
@@ -188,7 +189,7 @@ function resetToReady() {
 }
 
 let frames = 0, dx = 2;
-const state = { curr:0, getReady:0, Play:1, gameOver:2 };
+const state = { curr:0, getReady:0, Play:1, gameOver:2, Win:3 };
 const SFX = {
   start:new Audio("sfx/start.wav"),
   flap: new Audio("sfx/flap.wav"),
@@ -353,11 +354,13 @@ const bird = {
           const secureWin = GameSecurity.generateSecureWin();
           console.log("✅ Sending validated win to parent");
           window.parent.postMessage(secureWin, "*");
+          
+          // Switch to win state to display password
+          state.curr = state.Win;
         } else {
           console.log("❌ Win validation failed - no message sent");
+          resetToReady();
         }
-        
-        resetToReady();
       }
     }
     return false;
@@ -393,10 +396,41 @@ const UI = (function() {
     draw() {
       if (state.curr===state.getReady) this.drawAt(this.getReady.sprite);
       if (state.curr===state.gameOver) this.drawAt(this.gameOver.sprite);
+      if (state.curr===state.Win) this.drawWinScreen();
       this.drawTap(); this.drawScore();
     },
     
+    drawWinScreen() {
+      // Draw semi-transparent overlay
+      sctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      sctx.fillRect(0, 0, scrn.width, scrn.height);
+      
+      // Draw password text
+      sctx.fillStyle = "#FFD700"; // Gold color
+      sctx.strokeStyle = "#000";
+      sctx.lineWidth = 4;
+      sctx.font = "bold 40px Squada One";
+      sctx.textAlign = "center";
+      
+      const text = "FLAPPYSANTABIRD";
+      const x = scrn.width / 2;
+      const y = scrn.height / 2;
+      
+      sctx.strokeText(text, x, y);
+      sctx.fillText(text, x, y);
+      
+      // Draw "YOU WIN!" above it
+      sctx.font = "bold 50px Squada One";
+      sctx.strokeText("YOU WIN!", x, y - 60);
+      sctx.fillText("YOU WIN!", x, y - 60);
+      
+      // Reset text align for other text
+      sctx.textAlign = "left";
+    },
+    
     drawTap() {
+      if (state.curr === state.Win) return; // Don't show tap on win screen
+      
       const img = this.tap[this.frame].sprite;
       const x = (scrn.width-img.width)/2,
             y = (scrn.height-img.height)/2 +
@@ -407,6 +441,8 @@ const UI = (function() {
     },
     
     drawScore() {
+      if (state.curr === state.Win) return; // Don't show score on win screen
+      
       sctx.fillStyle="#FFF"; sctx.strokeStyle="#000"; sctx.lineWidth=2;
       if (state.curr===state.Play) {
         sctx.font="35px Squada One";
