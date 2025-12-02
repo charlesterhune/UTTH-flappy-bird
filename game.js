@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const winScore    = 1;      // how many pipe-pairs to pass before "win"
+const winScore    = 30;      // how many pipe-pairs to pass before "win"
 const internalW   = 320, internalH = 480;
 // ───────────────
 
@@ -358,6 +358,7 @@ const bird = {
           
           // Show password for 10 seconds and reset game
           showPasswordTimer = 500; // 10 seconds at 20ms per frame
+          console.log("🔑 PASSWORD TIMER SET TO:", showPasswordTimer);
           resetToReady();
         } else {
           console.log("❌ Win validation failed - no message sent");
@@ -478,6 +479,7 @@ function draw() {
   
   // Draw password LAST so it's on top of everything
   if (showPasswordTimer > 0) {
+    console.log("🎨 DRAWING PASSWORD! Timer:", showPasswordTimer);
     sctx.fillStyle = "#FFD700"; // Gold color
     sctx.strokeStyle = "#000";
     sctx.lineWidth = 4;
