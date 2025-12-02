@@ -1,4 +1,4 @@
-const winScore    = 1;
+const winScore    = 30;
 const internalW   = 320, internalH = 480;
 
 const RAD  = Math.PI / 180;
@@ -43,7 +43,7 @@ const GameSecurity = (function() {
     
     validateWin() {
       const gameTime = Date.now() - _gameStartTime;
-      const minGameTime = 3000;
+      const minGameTime = 30000;
       
       if (gameTime < minGameTime) {
         return false;
