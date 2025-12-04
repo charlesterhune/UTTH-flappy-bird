@@ -1,4 +1,4 @@
-const winScore    = 100;
+const winScore    = 999;
 const internalW   = 320, internalH = 480;
 
 const RAD  = Math.PI / 180;
