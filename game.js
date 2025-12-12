@@ -182,6 +182,11 @@ const SFX = {
 const gnd = {
   sprite1:new Image(), sprite2:new Image(), x:0, y:0,
   draw() {
+    // Guard against unloaded sprites
+    if (!this.sprite1.width || this.sprite1.width <= 0) {
+      return;
+    }
+    
     this.y = scrn.height - this.sprite1.height;
     const numTiles = Math.ceil(scrn.width / this.sprite1.width) + 1;
     for (let i = 0; i < numTiles; i++) {
@@ -201,6 +206,11 @@ const gnd = {
 const bg = {
   sprite:new Image(),
   draw() {
+    // Guard against unloaded sprite
+    if (!this.sprite.width || this.sprite.width <= 0) {
+      return;
+    }
+    
     const y = scrn.height - this.sprite.height;
     const numTiles = Math.ceil(scrn.width / this.sprite.width) + 1;
     for (let i = 0; i < numTiles; i++) {
