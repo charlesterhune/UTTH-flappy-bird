@@ -313,7 +313,7 @@ const bird = {
   checkCollision() {
     if (!pipe.pipes.length) return false;
     const spr = this.animations[0].sprite,
-          r   = spr.width/2.5,
+          r   = spr.width/3.0,
           p   = pipe.pipes[0],
           roof  = p.y + pipe.top.sprite.height,
           floor = roof + pipe.gap,
