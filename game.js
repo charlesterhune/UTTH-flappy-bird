@@ -411,7 +411,7 @@ const UI = (function() {
     drawAt(img) {
       sctx.drawImage(img,
         (scrn.width-img.width)/2,
-        (scrn.height-img.height)/2);
+        (scrn.height-img.height)/2 -60);
     }
   };
 })();
