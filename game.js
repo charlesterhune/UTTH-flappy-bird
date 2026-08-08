@@ -199,7 +199,7 @@ const gnd = {
   }
 };
 
-const bg = {
+const  = {
   sprite:new Image(),
   draw() {
     // Guard against unloaded sprite
@@ -418,7 +418,7 @@ const UI = (function() {
 
 gnd.sprite1.src     = "img/ground1.png";
 gnd.sprite2.src     = "img/ground1  .png";
-bg.sprite.src       = "img/BGW.png";
+bg.sprite.src       = "img/BG1.png";
 pipe.top.sprite.src = "img/toppipet.png";
 pipe.bot.sprite.src = "img/botpipet.png";
 UI.getReady.sprite.src = "img/getready-c.png";
