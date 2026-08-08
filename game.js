@@ -386,18 +386,18 @@ const UI = (function() {
       sctx.fillStyle="#FFF"; sctx.strokeStyle="#000"; sctx.lineWidth=2;
       if (state.curr===state.Play) {
         sctx.font="35px Squada One";
-        sctx.fillText(this.score.curr, scrn.width/2-5, 50);
         sctx.strokeText(this.score.curr, scrn.width/2-5, 50);
+        sctx.fillText(this.score.curr, scrn.width/2-5, 50);
       }
       if (state.curr===state.gameOver) {
         this.score.best = Math.max(this.score.curr,
           localStorage.getItem("best")||0);
         localStorage.setItem("best", this.score.best);
         sctx.font="40px Squada One";
-        sctx.fillText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
         sctx.strokeText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
-        sctx.fillText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
+        sctx.fillText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
         sctx.strokeText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
+        sctx.fillText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
       }
     },
     
