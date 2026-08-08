@@ -422,13 +422,13 @@ drawScore() {
 
     sctx.fillText(
       `SCORE: ${this.score.curr}`,
-      scrn.width / 2 - 80,
+      scrn.width / 2 - 105,
       scrn.height / 2
     );
 
     sctx.fillText(
       `BEST:  ${this.score.best}`,
-      scrn.width / 2 - 80,
+      scrn.width / 2 - 105,
       scrn.height / 2 + 40
     );
   }
