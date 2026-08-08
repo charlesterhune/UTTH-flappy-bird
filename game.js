@@ -382,24 +382,61 @@ const UI = (function() {
       sctx.drawImage(img,x,y);
     },
     
-    drawScore() {
-      sctx.fillStyle="#FFF"; sctx.strokeStyle="#000"; sctx.lineWidth=2;
-      if (state.curr===state.Play) {
-        sctx.font="35px Silkscreen";
-        sctx.strokeText(this.score.curr, scrn.width/2-5, 50);
-        sctx.fillText(this.score.curr, scrn.width/2-5, 50);
-      }
-      if (state.curr===state.gameOver) {
-        this.score.best = Math.max(this.score.curr,
-          localStorage.getItem("best")||0);
-        localStorage.setItem("best", this.score.best);
-        sctx.font="40px Silkscreen";
-        sctx.strokeText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
-        sctx.fillText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
-        sctx.strokeText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
-        sctx.fillText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
-      }
-    },
+drawScore() {
+  // Cycle neon glow colors
+  const neonColors = [
+    "#00FFFF", // cyan
+    "#FF00FF", // magenta
+    "#39FF14", // neon green
+    "#FFFF00", // yellow
+    "#9D00FF", // purple
+    "#FF5F1F"  // neon orange
+  ];
+
+  // Change color about every 400ms
+  const glowColor = neonColors[Math.floor(frames / 20) % neonColors.length];
+
+  sctx.fillStyle = "#FFFFFF";
+  sctx.shadowColor = glowColor;
+  sctx.shadowBlur = 16;
+
+  if (state.curr === state.Play) {
+    sctx.font = '35px "Silkscreen"';
+
+    sctx.fillText(
+      this.score.curr,
+      scrn.width / 2 - 5,
+      50
+    );
+  }
+
+  if (state.curr === state.gameOver) {
+    this.score.best = Math.max(
+      this.score.curr,
+      localStorage.getItem("best") || 0
+    );
+
+    localStorage.setItem("best", this.score.best);
+
+    sctx.font = '40px "Silkscreen"';
+
+    sctx.fillText(
+      `SCORE: ${this.score.curr}`,
+      scrn.width / 2 - 80,
+      scrn.height / 2
+    );
+
+    sctx.fillText(
+      `BEST:  ${this.score.best}`,
+      scrn.width / 2 - 80,
+      scrn.height / 2 + 40
+    );
+  }
+
+  // Reset glow so it doesn't affect other canvas elements
+  sctx.shadowColor = "transparent";
+  sctx.shadowBlur = 0;
+},
     
     update() {
       if ([state.getReady,state.gameOver].includes(state.curr) &&
