@@ -425,10 +425,10 @@ UI.getReady.sprite.src = "img/getready-c.png";
 UI.gameOver.sprite.src = "img/go.png";
 UI.tap[0].sprite.src   = "img/tap/t0.png";
 UI.tap[1].sprite.src   = "img/tap/t1.png";
-bird.animations[0].sprite.src = "img/bird/s0.png";
-bird.animations[1].sprite.src = "img/bird/s1.png";
-bird.animations[2].sprite.src = "img/bird/s2.png";
-bird.animations[3].sprite.src = "img/bird/s0.png";
+bird.animations[0].sprite.src = "img/bird/t0.png";
+bird.animations[1].sprite.src = "img/bird/t1.png";
+bird.animations[2].sprite.src = "img/bird/t2.png";
+bird.animations[3].sprite.src = "img/bird/t0.png";
 
 function update() { 
   bird.update(); 
