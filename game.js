@@ -416,8 +416,8 @@ const UI = (function() {
   };
 })();
 
-gnd.sprite1.src     = "img/ground1.png";
-gnd.sprite2.src     = "img/ground1.png";
+gnd.sprite1.src     = "img/ground2.png";
+gnd.sprite2.src     = "img/ground2.png";
 bg.sprite.src       = "img/BG1.png";
 pipe.top.sprite.src = "img/toppipet.png";
 pipe.bot.sprite.src = "img/botpipet.png";
