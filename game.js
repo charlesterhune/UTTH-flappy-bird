@@ -260,14 +260,27 @@ const bird = {
               {sprite:new Image()},{sprite:new Image()}],
   rotation:0, x:50, y:100, speed:0, gravity:0.125, thrust:3.6, frame:0,
   
-  draw() {
-    const spr = this.animations[this.frame].sprite;
-    sctx.save();
-    sctx.translate(this.x,this.y);
-    sctx.rotate(this.rotation*RAD);
-    sctx.drawImage(spr, -spr.width/2, -spr.height/2);
-    sctx.restore();
-  },
+draw() {
+  const spr = this.animations[this.frame].sprite;
+  const scale = 1.15; // 15% larger visually
+
+  const w = spr.width * scale;
+  const h = spr.height * scale;
+
+  sctx.save();
+  sctx.translate(this.x, this.y);
+  sctx.rotate(this.rotation * RAD);
+
+  sctx.drawImage(
+    spr,
+    -w / 2,
+    -h / 2,
+    w,
+    h
+  );
+
+  sctx.restore();
+},
   
   update() {
     const r = this.animations[0].sprite.width/2;
@@ -366,11 +379,22 @@ const UI = (function() {
     },
     frame: 0,
     
-    draw() {
-      if (state.curr===state.getReady) this.drawAt(this.getReady.sprite);
-      if (state.curr===state.gameOver) this.drawAt(this.gameOver.sprite);
-      this.drawTap(); this.drawScore();
-    },
+draw() {
+  if (state.curr === state.getReady) {
+    this.drawAt(this.getReady.sprite);
+  }
+
+  if (state.curr === state.gameOver) {
+    this.drawAt(this.gameOver.sprite);
+  }
+
+  // Only show TAP before starting or after game over
+  if (state.curr !== state.Play) {
+    this.drawTap();
+  }
+
+  this.drawScore();
+},
     
     drawTap() {
       const img = this.tap[this.frame].sprite;
@@ -403,11 +427,14 @@ drawScore() {
   if (state.curr === state.Play) {
     sctx.font = '35px "Silkscreen"';
 
-    sctx.fillText(
-      this.score.curr,
-      scrn.width / 2 - 5,
-      50
-    );
+const scoreText = String(this.score.curr);
+const scoreWidth = sctx.measureText(scoreText).width;
+
+sctx.fillText(
+  scoreText,
+  (scrn.width - scoreWidth) / 2,
+  50
+);
   }
 
   if (state.curr === state.gameOver) {
