@@ -199,7 +199,7 @@ const gnd = {
   }
 };
 
-const  = {
+const bg = {
   sprite:new Image(),
   draw() {
     // Guard against unloaded sprite
