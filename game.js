@@ -385,7 +385,7 @@ const UI = (function() {
     drawScore() {
       sctx.fillStyle="#FFF"; sctx.strokeStyle="#000"; sctx.lineWidth=2;
       if (state.curr===state.Play) {
-        sctx.font="35px Squada One";
+        sctx.font="35px Silkscreen";
         sctx.strokeText(this.score.curr, scrn.width/2-5, 50);
         sctx.fillText(this.score.curr, scrn.width/2-5, 50);
       }
@@ -393,7 +393,7 @@ const UI = (function() {
         this.score.best = Math.max(this.score.curr,
           localStorage.getItem("best")||0);
         localStorage.setItem("best", this.score.best);
-        sctx.font="40px Squada One";
+        sctx.font="40px Silkscreen";
         sctx.strokeText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
         sctx.fillText(`SCORE: ${this.score.curr}`, scrn.width/2-80, scrn.height/2);
         sctx.strokeText(`BEST:  ${this.score.best}`, scrn.width/2-80, scrn.height/2+40);
