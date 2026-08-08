@@ -1,3 +1,73 @@
+ChatGPT Plus
+
+
+
+
+
+Pasted text(20260808-002822).txt
+Document
+
+
+Pasted text(20260808-003355).txt
+Document
+Double check 
+
+I double-checked the new file you just sent, and yes — this version still displays the old password after a win.
+
+It still contains all four pieces of the reveal:
+
+showPasswordTimer is declared. 
+
+
+Winning sets showPasswordTimer = 500. 
+
+
+The timer is counted down every game loop. 
+
+
+While that timer is active, it decodes and draws FLAPPYSANTABIRD on the canvas. 
+
+
+It also still sends the password in the secure win object as code: code. 
+
+
+One other important thing I noticed: this latest file has winScore = 99, whereas the earlier file you sent had winScore = 50. 
+
+
+So if this is the current live version, I should remove only the password reveal/send code from this 99-point version and leave absolutely everything else alone.
+
+
+Yes please do removeit and don't touch anything else
+
+Done. I removed only the password-related code from your 99-point version. The original had the password construction, payload field, timer, and on-screen drawing block. 
+
+
+I verified the diff: 24 lines deleted, 0 lines added or changed. winScore is still 99, and the physics, pipe gap, security checks, win message, controls, sounds, and image paths are untouched. 
+
+
+Download the cleaned Gulag code 
+
+
+gulag_99_no_password.js
+Code
+
+
+Say's I can't download it
+
+Try this one:
+
+Download the cleaned Gulag code as TXT
+
+It’s the exact same cleaned 99-point version—just saved as .txt so it should download normally. 
+
+
+gulag_99_no_password.txt
+Document
+
+
+gulag_99_no_password.txt
+
+
 const winScore    = 99;
 const internalW   = 320, internalH = 480;
 
@@ -73,15 +143,12 @@ const GameSecurity = (function() {
       const dataString = JSON.stringify(gameData);
       const hash = btoa(dataString + "SECURE_GAME_2024");
       
-      const parts = [70,76,65,80,80,89,83,65,78,84,65,66,73,82,68];
-      const code = String.fromCharCode(...parts);
       
       return {
         type: "secureFlappyWin",
         data: gameData,
         hash: hash,
         validated: true,
-        code: code
       };
     }
   };
@@ -168,7 +235,6 @@ function resetToReady() {
 }
 
 let frames = 0, dx = 2;
-let showPasswordTimer = 0;
 const state = { curr:0, getReady:0, Play:1, gameOver:2 };
 const SFX = {
   start:new Audio("sfx/start.wav"),
@@ -339,7 +405,6 @@ const bird = {
           const secureWin = GameSecurity.generateSecureWin();
           window.parent.postMessage(secureWin, "*");
           
-          showPasswordTimer = 500;
           resetToReady();
         } else {
           resetToReady();
@@ -441,31 +506,12 @@ function update() {
   pipe.update(); 
   UI.update(); 
   
-  if (showPasswordTimer > 0) {
-    showPasswordTimer--;
-  }
 }
 function draw() {
   sctx.fillStyle = "#30c0df";
   sctx.fillRect(0,0,scrn.width,scrn.height);
   bg.draw(); pipe.draw(); bird.draw(); gnd.draw(); UI.draw();
   
-  if (showPasswordTimer > 0) {
-    sctx.fillStyle = "#FFD700";
-    sctx.strokeStyle = "#000";
-    sctx.lineWidth = 4;
-    sctx.font = "bold 30px Squada One";
-    sctx.textAlign = "center";
-    
-    const text = String.fromCharCode(70,76,65,80,80,89,83,65,78,84,65,66,73,82,68);
-    const x = scrn.width / 2;
-    const y = 40;
-    
-    sctx.strokeText(text, x, y);
-    sctx.fillText(text, x, y);
-    
-    sctx.textAlign = "left";
-  }
 }
 function gameLoop() { update(); draw(); frames++; }
 setInterval(gameLoop, 20);
