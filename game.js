@@ -438,7 +438,7 @@ function update() {
   
 }
 function draw() {
-  sctx.fillStyle = "#1b1448";
+  sctx.fillStyle = "#030c2f";
   sctx.fillRect(0,0,scrn.width,scrn.height);
   bg.draw(); pipe.draw(); bird.draw(); gnd.draw(); UI.draw();
   
